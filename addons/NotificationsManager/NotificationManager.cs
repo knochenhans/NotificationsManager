@@ -8,6 +8,7 @@ public partial class NotificationManager : MarginContainer
 
     [Export] public int MaxNotifications = 5;
     [Export] public int NotificationSpacing = 0;
+    [Export] public Vector2 NotificationOffset = new(0, 0);
 
     [ExportCategory("Lifetime")]
     [Export] public float NotificationLifetime = 3f;
@@ -36,6 +37,7 @@ public partial class NotificationManager : MarginContainer
         notification.Lifetime = lifetime > 0 ? lifetime : NotificationLifetime;
         notification.TreeExited += () => NotificationQueue.Dequeue();
         notification.NotificationClosed += () => OnNotificationClosed(notification);
+        notification.Position = NotificationOffset;
 
         NotificationContainer.AddChild(notification);
 
@@ -47,7 +49,7 @@ public partial class NotificationManager : MarginContainer
 
         NotificationQueue.Enqueue(notification);
 
-        notification.GlobalPosition = new Vector2(0, (NotificationContainer.GetChildCount() - 1) * notification.Size.Y);
+        notification.GlobalPosition += new Vector2(0, (NotificationContainer.GetChildCount() - 1) * notification.Size.Y);
     }
 
     private async void OnNotificationClosed(NotificationLabel notification)
