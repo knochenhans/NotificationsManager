@@ -1,25 +1,27 @@
 using Godot;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 public partial class NotificationManager : MarginContainer
 {
     [Export] public PackedScene NotificationScene;
-    
+
     [Export] public int MaxNotifications = 5;
     [Export] public int NotificationSpacing = 0;
 
     [ExportCategory("Lifetime")]
     [Export] public float NotificationLifetime = 3f;
     [Export] public bool AnimateLifetimeBar = false;
-    
+
     [ExportCategory("Movement")]
     [Export] public float NotificationMoveSpeed = 1f;
     [Export] public Vector2 MoveDirection = new(0, 0);
 
     [ExportCategory("Fade")]
-    [Export] public float NotificationFadeDuration = 1f;
+    [Export] public float NotificationFadeInDuration = 1f;
+    [Export] public float NotificationFadeOutDuration = 1f;
 
-    private Queue<NotificationLabel> NotificationQueue = new();
+    private readonly Queue<NotificationLabel> NotificationQueue = new();
     private Control NotificationContainer => GetNode<Control>("NotificationContainer");
 
     public override void _Ready()
@@ -27,7 +29,7 @@ public partial class NotificationManager : MarginContainer
         Logger.Log("NotificationManager is ready", "NotificationManager", Logger.LogTypeEnum.UI);
     }
 
-    public void ShowNotification(string message, float lifetime = -1f)
+    public async void ShowNotification(string message, float lifetime = -1f)
     {
         var notification = NotificationScene.Instantiate<NotificationLabel>();
         notification.SetMessage(message);
@@ -37,39 +39,44 @@ public partial class NotificationManager : MarginContainer
 
         NotificationContainer.AddChild(notification);
 
+        if (NotificationFadeInDuration > 0)
+        {
+            notification.Modulate = new Color(1, 1, 1, 0);
+            await FadeHelper.TweenFadeModulate(notification, FadeHelper.FadeDirectionEnum.In, NotificationFadeInDuration);
+        }
+
         NotificationQueue.Enqueue(notification);
-        // if (NotificationQueue.Count > MaxNotifications)
-        // {
-        //     var oldestNotification = NotificationQueue.Dequeue();
-        //     oldestNotification.QueueFree();
-        // }
 
         notification.GlobalPosition = new Vector2(0, (NotificationContainer.GetChildCount() - 1) * notification.Size.Y);
     }
 
     private async void OnNotificationClosed(NotificationLabel notification)
     {
+        GD.Print("Closing notification");
         if (MoveDirection != Vector2.Zero)
         {
-            var tween = CreateTween();
             var offset = new Vector2(MoveDirection.X * notification.Size.X,
-                         MoveDirection.Y * notification.Size.Y);
+						 MoveDirection.Y * notification.Size.Y);
             var targetPos = notification.Position + offset;
-            tween.TweenProperty(notification, "position", targetPos, NotificationMoveSpeed)
-                 .SetTrans(Tween.TransitionType.Cubic)
-                 .SetEase(Tween.EaseType.Out);
-            await ToSignal(tween, "finished");
+            await TweenPropertyAsync(notification, "position", targetPos, NotificationMoveSpeed);
         }
 
-        if (NotificationFadeDuration > 0)
+        if (NotificationFadeOutDuration > 0)
         {
-            var fadeTween = CreateTween();
-            fadeTween.TweenProperty(notification, "modulate:a", 0f, NotificationFadeDuration)
-                      .SetTrans(Tween.TransitionType.Cubic)
-                      .SetEase(Tween.EaseType.Out);
-            await ToSignal(fadeTween, "finished");
+            await FadeHelper.TweenFadeModulate(notification, FadeHelper.FadeDirectionEnum.Out, NotificationFadeOutDuration, 0f);
         }
 
         notification.QueueFree();
+    }
+
+    private async Task TweenPropertyAsync(Node target, string property, Variant finalValue, float duration,
+										   Tween.TransitionType transition = Tween.TransitionType.Cubic,
+										   Tween.EaseType ease = Tween.EaseType.Out)
+    {
+        var tween = CreateTween();
+        tween.TweenProperty(target, property, finalValue, duration)
+			 .SetTrans(transition)
+			 .SetEase(ease);
+        await ToSignal(tween, Tween.SignalName.Finished);
     }
 }

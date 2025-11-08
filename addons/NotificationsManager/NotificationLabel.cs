@@ -33,9 +33,9 @@ public partial class NotificationLabel : Label
         Text = message;
     }
 
-    void OnTimerTimeout()
+    async void OnTimerTimeout()
     {
+        await FadeHelper.TweenFadeModulate(this, 0, 1, 1);
         EmitSignal(SignalName.NotificationClosed);
-        _ = FadeHelper.TweenFadeModulate(this, 0, 1, 1);
     }
 }
