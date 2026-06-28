@@ -1,15 +1,16 @@
-[gd_scene load_steps=2 format=3 uid="uid://dmdalullyvcyt"]
+[gd_scene format=3 uid="uid://dmdalullyvcyt"]
 
-[ext_resource type="Script" uid="uid://2avroodg7twj" path="res://addons/NotificationsManager/NotificationLabel.cs" id="2_mnice"]
+[ext_resource type="Script" uid="uid://2avroodg7twj" path="res://CoreSystems/NotificationsManager/NotificationLabel.cs" id="2_mnice"]
 
-[node name="NotificationLabel" type="Label"]
+[node name="NotificationLabel" type="Label" unique_id=1539640849 node_paths=PackedStringArray("BackgroundRect")]
 offset_right = 30.0
 offset_bottom = 23.0
 size_flags_horizontal = 0
 text = "test"
 script = ExtResource("2_mnice")
+BackgroundRect = NodePath("BackgroundRect")
 
-[node name="BackgroundRect" type="ColorRect" parent="."]
+[node name="BackgroundRect" type="ColorRect" parent="." unique_id=1462319462]
 modulate = Color(0.0923971, 0.0923971, 0.092397, 1)
 show_behind_parent = true
 layout_mode = 1

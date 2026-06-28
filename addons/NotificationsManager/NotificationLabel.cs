@@ -1,41 +1,50 @@
+using System;
 using Godot;
 
 public partial class NotificationLabel : Label
 {
     [Signal] public delegate void NotificationClosedEventHandler();
 
+    [Export] public ColorRect BackgroundRect;
+
     Timer LifetimeTimer;
-    ColorRect BackgroundRect => GetNode<ColorRect>("BackgroundRect");
 
     public float Lifetime = 3f;
     public bool AnimateLifetimeBar = false;
 
     public override void _Ready()
     {
-        LifetimeTimer = new Timer();
-        AddChild(LifetimeTimer);
-        LifetimeTimer.WaitTime = Lifetime;
-        LifetimeTimer.Timeout += OnTimerTimeout;
-        LifetimeTimer.OneShot = true;
-        LifetimeTimer.Start();
+        SetupTimer();
 
         if (AnimateLifetimeBar)
+            StartLifetimeBarAnimation();
+    }
+
+    private void SetupTimer()
+    {
+        LifetimeTimer = new Timer
         {
-            var tween = CreateTween();
-            tween.TweenProperty(BackgroundRect, "size", new Vector2(0, Size.Y), Lifetime)
-                 .SetTrans(Tween.TransitionType.Cubic)
-                 .SetEase(Tween.EaseType.Out);
-        }
+            WaitTime = Lifetime,
+            OneShot = true
+        };
+        AddChild(LifetimeTimer);
+        LifetimeTimer.Timeout += OnTimerTimeout;
+        LifetimeTimer.Start();
     }
 
-    public void SetMessage(string message)
+    private void StartLifetimeBarAnimation()
     {
-        Text = message;
+        var tween = CreateTween();
+
+        tween.TweenProperty(
+            BackgroundRect,
+            "size",
+            new Vector2(0, BackgroundRect.Size.Y),
+            Lifetime
+        )
+        .SetTrans(Tween.TransitionType.Linear);
     }
 
-    async void OnTimerTimeout()
-    {
-        await FadeHelper.TweenFadeModulate(this, 0, 1, 1);
-        EmitSignal(SignalName.NotificationClosed);
-    }
+    public void SetMessage(string message) => Text = message;
+    void OnTimerTimeout() => EmitSignal(SignalName.NotificationClosed);
 }
